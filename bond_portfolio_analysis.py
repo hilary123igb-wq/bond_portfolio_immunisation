@@ -4,7 +4,7 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 
 # 1. PORTFOLIO DATA (from Excel Calculations)
-# We define the bonds, weights, and modified durations you calculated
+# Bonds, weights, and modified durations calculated in Excel
 portfolio_data = {
     'Bond': ['Belgium', 'UK', 'Int. Paper', 'Bausch'],
     'Weight': [0.4, 0.3, 0.2, 0.1],
@@ -32,7 +32,7 @@ model = sm.tsa.UnobservedComponents(market_yields, level='local level')
 res = model.fit(method='bfgs', disp=False)
 
 # 4. PROBABILISTIC FORECASTING
-# Forecase 12 steps ahad to generate a 95% C.I
+# Forecast 12 steps ahead to generate a 95% C.I
 forecast_res = res.get_forecast(steps=12)
 mean_forecast = forecast_res.predicted_mean
 conf_int = forecast_res.conf_int(alpha=0.05) 
@@ -44,21 +44,25 @@ worst_case_rate = conf_int[-1, 1]
 delta_r = worst_case_rate - current_rate
 
 P_total = 1000000 
-# Loss calculation using your portfolio's specific weighted duration
+# Loss calculation using the portfolio's weighted duration
 stochastic_loss = -P_total * weighted_duration * delta_r
 
 # OUTPUT RESULTS
 print(f"Total Portfolio Weighted Modified Duration: {weighted_duration:.2f}")
 print(f"Current Benchmark Yield: {current_rate:.2%}")
 print(f"95% Confidence Upper Bound: {worst_case_rate:.2%}")
-print(f"Predicted Portfolio Loss: €{abs(stochastic_loss):,.2f}")
+print(f"Predicted Portfolio Loss: ${abs(stochastic_loss):,.2f}")
 
 # 6. VISUALIZATION
+forecast_days = np.arange(n_days, n_days + 12)
+
 plt.figure(figsize=(10,6))
-plt.plot(market_yields, label='Simulated Yield History (ECB Calibrated)', color='black')
-plt.plot(np.arange(n_days, n_days+12), mean_forecast, 'r--', label='Kalman Forecast')
-plt.fill_between(np.arange(n_days, n_days+12), conf_int[:, 0], conf_int[:, 1], 
+plt.plot(market_yields * 100, label='Simulated Yield History (ECB Calibrated)', color='black')
+plt.plot(forecast_days, mean_forecast * 100, 'r--', label='Kalman Forecast')
+plt.fill_between(forecast_days, conf_int[:, 0] * 100, conf_int[:, 1] * 100,
                  color='red', alpha=0.15, label='95% Confidence Interval')
 plt.title("State Space Forecasting: Interest Rate Risk Engine")
+plt.xlabel("Trading day")
+plt.ylabel("Yield (%)")
 plt.legend()
 plt.show()
